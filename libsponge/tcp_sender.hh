@@ -8,6 +8,45 @@
 
 #include <functional>
 #include <queue>
+#include <map>
+
+class TCP_Timer {
+  private:
+    bool _start;
+    bool _expire;
+    size_t _tick_time;
+    unsigned int _expire_time;
+
+  public:
+    TCP_Timer()
+      : _start(false), _expire(false), _tick_time(0), _expire_time(0) {}
+
+    void start(unsigned int rto) {
+      _start = true;
+      _expire = false;
+      _expire_time = rto;
+      _tick_time = 0;
+    }
+    
+    void advance(size_t ms) {
+      _tick_time += ms;
+      if (_tick_time >= _expire_time) {
+        _expire = true;
+      }
+    }
+
+    bool is_start() {return _start;}
+
+    bool has_expire() {return _expire;}
+
+    void stop() {
+      _start = false;
+      _expire = false;
+      _tick_time = 0;
+      _expire_time = 0;
+    }
+
+};
 
 //! \brief The "sender" part of a TCP implementation.
 
@@ -26,11 +65,44 @@ class TCPSender {
     //! retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
 
+    //! retransmission timer for the connection
+    unsigned int _current_retransmission_timeout;
+
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    //! has_sent: send the first segments or not
+    bool _has_sent = false;
+
+    //! receiver's window size
+    uint16_t _window_size = 1;
+
+    //! keep track of outstanding segments
+    std::deque<std::pair<uint64_t, TCPSegment>> _segments_outstanding{};
+
+    //! timer
+    TCP_Timer _timer {};
+
+    //! absolute ack number from receiver
+    uint64_t _abs_ackno_received = 0;
+
+    //! consecutive retransmissions
+    unsigned int _consecutive_retransmissions = 0;
+
+    //! send a segment
+    void send_tcp_segment(TCPSegment s);
+
+    //! number of outstanding bytes
+    uint64_t _on_flight = 0;
+
+    //! how many window does we fill already when receive an ack
+    uint64_t _fill_window_size = 0;
+
+    //! reach eof
+    bool _is_eof = false;
 
   public:
     //! Initialize a TCPSender

@@ -29,14 +29,14 @@ size_t ByteStream::write(const string &data) {
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
     DUMMY_CODE(len);
-    size_t n = bs.size() >= len ? len : remaining_capacity();
+    size_t n = bs.size() >= len ? len : bs.size();
     return string().assign(bs.begin(), bs.begin() + n);
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
 void ByteStream::pop_output(const size_t len) { 
     DUMMY_CODE(len);
-    size_t n = bs.size() >= len ? len : remaining_capacity();
+    size_t n = bs.size() >= len ? len : bs.size();
     nr += n;
     while (n--) {
         bs.pop_front();
